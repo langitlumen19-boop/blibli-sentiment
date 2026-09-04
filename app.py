@@ -470,152 +470,86 @@ elif menu == "Preprocessing":
 # ============================================================
 
 elif menu == "Analisis Sentimen":
+    st.title("🤖 Analisis Sentimen Naïve Bayes")
 
-    st.subheader(
-        "🤖 Analisis Sentimen Naïve Bayes"
+    if "data" not in st.session_state:
+        st.warning("Silakan upload dataset terlebih dahulu.")
+        st.stop()
+
+    df = st.session_state["data"].copy()
+
+    st.subheader("Upload Model Naïve Bayes")
+
+    uploaded_model = st.file_uploader(
+        "Upload model Naïve Bayes (.pkl)",
+        type=["pkl"]
     )
 
-    if st.session_state.data is None:
+    if uploaded_model is not None:
 
-        st.warning(
-            "Silakan upload dataset terlebih dahulu."
-        )
+        try:
+            model = pickle.load(uploaded_model)
 
-    else:
+            # Pastikan kolom ulasan benar
+            if "h3YV2d" not in df.columns:
+                st.error("Kolom ulasan h3YV2d tidak ditemukan.")
+                st.stop()
 
-        df = st.session_state.data.copy()
+            # Ambil teks ulasan
+            teks = df["h3YV2d"].fillna("").astype(str)
 
-        st.write(
-            "### Upload Model Naïve Bayes"
-        )
+            # Prediksi menggunakan model
+            prediksi = model.predict(teks)
 
-        uploaded_model = st.file_uploader(
-            "Upload model Naïve Bayes (.pkl)",
-            type=["pkl"],
-            key="model_upload"
-        )
+            # Samakan format label
+            prediksi = pd.Series(prediksi).astype(str).str.strip().str.lower()
 
-        if uploaded_model is not None:
+            # Simpan hasil
+            df["sentimen"] = prediksi
 
-            try:
+            st.session_state["hasil"] = df
 
-                model = pickle.load(
-                    uploaded_model
-                )
+            st.success("Prediksi sentimen berhasil dilakukan!")
 
-                st.success(
-                    "✅ Model Naïve Bayes berhasil dimuat."
-                )
+            # Ringkasan
+            st.subheader("Ringkasan Sentimen")
 
-                text_column = st.selectbox(
-                    "Pilih kolom teks untuk prediksi:",
-                    df.columns,
-                    key="prediction_column"
-                )
+            positif = (prediksi == "positif").sum()
+            netral = (prediksi == "netral").sum()
+            negatif = (prediksi == "negatif").sum()
 
-                if st.button(
-                    "▶ Jalankan Analisis Sentimen"
-                ):
+            col1, col2, col3 = st.columns(3)
 
-                    with st.spinner(
-                        "Model sedang melakukan prediksi..."
-                    ):
+            with col1:
+                st.metric("Positif", positif)
 
-                        teks = (
-                            df[text_column]
-                            .astype(str)
-                        )
+            with col2:
+                st.metric("Netral", netral)
 
-                        teks_bersih = (
-                            teks
-                            .apply(preprocess_text)
-                        )
+            with col3:
+                st.metric("Negatif", negatif)
 
-                        prediksi = model.predict(
-                            teks_bersih
-                        )
+            # Hasil prediksi
+            st.subheader("Hasil Prediksi")
 
-                        df["sentimen"] = prediksi
+            st.dataframe(
+                df[["h3YV2d", "sentimen"]],
+                use_container_width=True
+            )
 
-                        st.session_state.hasil = df
+            # Download
+            csv = df.to_csv(index=False).encode("utf-8")
 
-                    st.success(
-                        "✅ Analisis sentimen berhasil dilakukan."
-                    )
+            st.download_button(
+                "📥 Download Hasil Prediksi",
+                csv,
+                "hasil_prediksi_sentimen_blibli.csv",
+                "text/csv"
+            )
 
-                    st.write(
-                        "### Ringkasan Sentimen"
-                    )
-
-                    jumlah = (
-                        df["sentimen"]
-                        .value_counts()
-                    )
-
-                    col1, col2, col3 = st.columns(3)
-
-                    with col1:
-
-                        st.metric(
-                            "Positif",
-                            int(
-                                jumlah.get(
-                                    "Positif",
-                                    0
-                                )
-                            )
-                        )
-
-                    with col2:
-
-                        st.metric(
-                            "Netral",
-                            int(
-                                jumlah.get(
-                                    "Netral",
-                                    0
-                                )
-                            )
-                        )
-
-                    with col3:
-
-                        st.metric(
-                            "Negatif",
-                            int(
-                                jumlah.get(
-                                    "Negatif",
-                                    0
-                                )
-                            )
-                        )
-
-                    st.write(
-                        "### Hasil Prediksi"
-                    )
-
-                    st.dataframe(
-                        df,
-                        use_container_width=True
-                    )
-
-                    csv = df.to_csv(
-                        index=False
-                    ).encode("utf-8")
-
-                    st.download_button(
-                        label="⬇️ Download Hasil CSV",
-                        data=csv,
-                        file_name="hasil_sentimen_blibli.csv",
-                        mime="text/csv"
-                    )
-
-            except Exception as e:
-
-                st.error(
-                    f"Model gagal digunakan: {e}"
-                )
-
+        except Exception as e:
+            st.error(f"Model gagal digunakan: {e}")
+        
 
 # ============================================================
 # VISUALISASI
