@@ -789,6 +789,82 @@ elif menu == "Visualisasi":
 
 
 # ============================================================
+# UJI KOMENTAR MANUAL
+# ============================================================
+
+st.divider()
+
+st.subheader("📝 Uji Sentimen Komentar Manual")
+
+st.write(
+    "Masukkan komentar atau ulasan pengguna untuk "
+    "mengetahui hasil prediksi sentimen menggunakan "
+    "model Naïve Bayes."
+)
+
+komentar_manual = st.text_area(
+    "Masukkan komentar:",
+    placeholder="Contoh: Aplikasi Blibli sangat bagus dan mudah digunakan.",
+    height=120
+)
+
+if st.button("🔍 Analisis Komentar", key="analisis_manual"):
+
+    if komentar_manual.strip() == "":
+        st.warning("Silakan masukkan komentar terlebih dahulu.")
+
+    else:
+
+        try:
+
+            # Preprocessing komentar
+            teks_bersih_manual = preprocess_text(
+                komentar_manual
+            )
+
+            # Menggunakan model yang sudah di-load
+            hasil_prediksi = model.predict(
+                [teks_bersih_manual]
+            )[0]
+
+            hasil_prediksi = (
+                str(hasil_prediksi)
+                .strip()
+                .lower()
+                .capitalize()
+            )
+
+            st.write("### Hasil Prediksi")
+
+            if hasil_prediksi == "Positif":
+
+                st.success(
+                    f"😊 Sentimen: **{hasil_prediksi}**"
+                )
+
+            elif hasil_prediksi == "Negatif":
+
+                st.error(
+                    f"😞 Sentimen: **{hasil_prediksi}**"
+                )
+
+            else:
+
+                st.warning(
+                    f"😐 Sentimen: **{hasil_prediksi}**"
+                )
+
+            with st.expander("🔎 Lihat teks setelah preprocessing"):
+
+                st.write(teks_bersih_manual)
+
+        except Exception as e:
+
+            st.error(
+                f"Analisis komentar gagal dilakukan: {e}"
+            )
+
+# ============================================================
 # FOOTER
 # ============================================================
 
