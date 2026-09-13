@@ -752,30 +752,6 @@ elif menu == "Analisis Sentimen":
                 else:
                     st.warning(f"😐 **Sentimen: {hasil_prediksi.upper()}**")
 
-                # Tampilkan probabilitas jika tersedia
-                if hasattr(model_manual, "predict_proba"):
-
-                    probabilitas = model_manual.predict_proba([teks_bersih_manual])[0]
-                    kelas = model_manual.classes_
-
-                    st.write("### 📈 Probabilitas Sentimen")
-
-                    col1, col2, col3 = st.columns(3)
-
-                    for nama_kelas, nilai in zip(kelas, probabilitas):
-
-                        nama_kelas = str(nama_kelas).strip().lower().capitalize()
-
-                        if nama_kelas == "Positif":
-                            with col1:
-                                st.metric("Positif", f"{nilai * 100:.2f}%")
-                        elif nama_kelas == "Netral":
-                            with col2:
-                                st.metric("Netral", f"{nilai * 100:.2f}%")
-                        elif nama_kelas == "Negatif":
-                            with col3:
-                                st.metric("Negatif", f"{nilai * 100:.2f}%")
-
                 with st.expander("🔎 Lihat hasil preprocessing"):
                     st.write(teks_bersih_manual)
 
