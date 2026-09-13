@@ -788,8 +788,11 @@ elif menu == "Visualisasi":
             )
 
 
+
+
+          
 # ============================================================
-# UJI KOMENTAR MANUAL
+# UJI SENTIMEN KOMENTAR MANUAL
 # ============================================================
 
 st.divider()
@@ -798,13 +801,12 @@ st.subheader("📝 Uji Sentimen Komentar Manual")
 
 st.write(
     "Masukkan komentar atau ulasan pengguna untuk "
-    "mengetahui hasil prediksi sentimen menggunakan "
-    "model Naïve Bayes."
+    "mengetahui hasil sentimen."
 )
 
 komentar_manual = st.text_area(
     "Masukkan komentar:",
-    placeholder="Contoh: Aplikasi Blibli sangat bagus dan mudah digunakan.",
+    placeholder="Contoh: Aplikasinya bagus dan cepat.",
     height=120
 )
 
@@ -817,52 +819,134 @@ if st.button("🔍 Analisis Komentar", key="analisis_manual"):
 
         try:
 
-            # Preprocessing komentar
-            teks_bersih_manual = preprocess_text(
+            # =================================================
+            # LOAD MODEL KHUSUS UNTUK UJI MANUAL
+            # =================================================
+
+            with open(
+                "model_nb_blibli_final_v2.pkl",
+                "rb"
+            ) as file:
+
+                model_manual = pickle.load(file)
+
+            # =================================================
+            # PREPROCESSING
+            # =================================================
+
+            teks_bersih = preprocess_text(
                 komentar_manual
             )
 
-            # Menggunakan model yang sudah di-load
-            hasil_prediksi = model.predict(
-                [teks_bersih_manual]
+            # =================================================
+            # PREDIKSI SENTIMEN
+            # =================================================
+
+            hasil = model_manual.predict(
+                [teks_bersih]
             )[0]
 
-            hasil_prediksi = (
-                str(hasil_prediksi)
+            hasil = (
+                str(hasil)
                 .strip()
                 .lower()
                 .capitalize()
             )
 
-            st.write("### Hasil Prediksi")
+            # =================================================
+            # PROBABILITAS
+            # =================================================
 
-            if hasil_prediksi == "Positif":
+            probabilitas = model_manual.predict_proba(
+                [teks_bersih]
+            )[0]
 
+            kelas = model_manual.classes_
+
+            hasil_probabilitas = dict(
+                zip(kelas, probabilitas)
+            )
+
+            # =================================================
+            # TAMPILKAN HASIL
+            # =================================================
+
+            st.success("✅ Analisis berhasil dilakukan.")
+
+            st.write("### 📊 Hasil Analisis Sentimen")
+
+            if hasil == "Positif":
                 st.success(
-                    f"😊 Sentimen: **{hasil_prediksi}**"
+                    f"😊 **Sentimen: {hasil.upper()}**"
                 )
 
-            elif hasil_prediksi == "Negatif":
-
+            elif hasil == "Negatif":
                 st.error(
-                    f"😞 Sentimen: **{hasil_prediksi}**"
+                    f"😞 **Sentimen: {hasil.upper()}**"
                 )
 
             else:
-
                 st.warning(
-                    f"😐 Sentimen: **{hasil_prediksi}**"
+                    f"😐 **Sentimen: {hasil.upper()}**"
                 )
 
-            with st.expander("🔎 Lihat teks setelah preprocessing"):
+            # =================================================
+            # NILAI PROBABILITAS
+            # =================================================
 
-                st.write(teks_bersih_manual)
+            st.write("### 📈 Probabilitas Sentimen")
+
+            col1, col2, col3 = st.columns(3)
+
+            for kelas_sentimen, nilai in hasil_probabilitas.items():
+
+                if kelas_sentimen.lower() == "positif":
+
+                    with col1:
+                        st.metric(
+                            "Positif",
+                            f"{nilai * 100:.2f}%"
+                        )
+
+                elif kelas_sentimen.lower() == "netral":
+
+                    with col2:
+                        st.metric(
+                            "Netral",
+                            f"{nilai * 100:.2f}%"
+                        )
+
+                elif kelas_sentimen.lower() == "negatif":
+
+                    with col3:
+                        st.metric(
+                            "Negatif",
+                            f"{nilai * 100:.2f}%"
+                        )
+
+            # =================================================
+            # HASIL PREPROCESSING
+            # =================================================
+
+            with st.expander(
+                "🔎 Lihat hasil preprocessing"
+            ):
+
+                st.write(
+                    "Teks setelah preprocessing:"
+                )
+
+                st.code(
+                    teks_bersih
+                )
 
         except Exception as e:
 
             st.error(
                 f"Analisis komentar gagal dilakukan: {e}"
             )
+
+
 
 # ============================================================
 # FOOTER
