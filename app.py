@@ -316,377 +316,472 @@ elif menu == "Analisis Sentimen":
 
     st.title("🤖 Analisis Sentimen Naïve Bayes")
 
+    # ========================================================
+    # ANALISIS DATASET PENELITIAN
+    # ========================================================
+
     if st.session_state.data is None:
 
-        st.warning(
-            "Silakan upload dataset terlebih dahulu."
-        )
-        st.stop()
+        st.warning("Silakan upload dataset terlebih dahulu untuk analisis dataset.")
 
-    df = st.session_state.data.copy()
+    else:
 
-    # --------------------------------------------------------
-    # CEK KOLOM ULASAN
-    # --------------------------------------------------------
+            df = st.session_state.data.copy()
 
-    if "h3YV2d" not in df.columns:
+            # --------------------------------------------------------
+            # CEK KOLOM ULASAN
+            # --------------------------------------------------------
 
-        st.error(
-            "Kolom ulasan 'h3YV2d' tidak ditemukan pada dataset."
-        )
-        st.stop()
-
-    # --------------------------------------------------------
-    # UPLOAD LABEL MANUAL
-    # --------------------------------------------------------
-
-    st.subheader("1️⃣ Upload Data Labeling Manual")
-
-    st.write(
-        "Upload file Excel yang berisi 600 data yang telah "
-        "diberi label manual."
-    )
-
-    uploaded_label = st.file_uploader(
-        "Upload file labeling manual (.xlsx)",
-        type=["xlsx"],
-        key="label_manual"
-    )
-
-    # --------------------------------------------------------
-    # UPLOAD MODEL
-    # --------------------------------------------------------
-
-    st.subheader("2️⃣ Upload Model Naïve Bayes")
-
-    uploaded_model = st.file_uploader(
-        "Upload model Naïve Bayes (.pkl)",
-        type=["pkl"],
-        key="model_nb"
-    )
-
-    # --------------------------------------------------------
-    # PROSES
-    # --------------------------------------------------------
-
-    if uploaded_label is not None and uploaded_model is not None:
-
-        try:
-
-            # ================================================
-            # BACA DATA LABELING
-            # ================================================
-
-            label_df = pd.read_excel(
-                uploaded_label
-            )
-
-            # Cari kolom ulasan
-            kolom_ulasan_label = None
-
-            for kolom in label_df.columns:
-
-                if str(kolom).strip().lower() in [
-                    "ulasan",
-                    "review",
-                    "reviews",
-                    "teks"
-                ]:
-                    kolom_ulasan_label = kolom
-                    break
-
-            if kolom_ulasan_label is None:
+            if "h3YV2d" not in df.columns:
 
                 st.error(
-                    "Kolom ulasan pada file labeling tidak ditemukan."
+                    "Kolom ulasan 'h3YV2d' tidak ditemukan pada dataset."
                 )
                 st.stop()
 
-            # Cari kolom sentimen
-            kolom_sentimen = None
+            # --------------------------------------------------------
+            # UPLOAD LABEL MANUAL
+            # --------------------------------------------------------
 
-            for kolom in label_df.columns:
+            st.subheader("1️⃣ Upload Data Labeling Manual")
 
-                if str(kolom).strip().lower() in [
-                    "sentimen",
-                    "sentiment",
-                    "label"
-                ]:
-                    kolom_sentimen = kolom
-                    break
-
-            if kolom_sentimen is None:
-
-                st.error(
-                    "Kolom sentimen pada file labeling tidak ditemukan."
-                )
-                st.stop()
-
-            # Pastikan jumlah data manual
-            if len(label_df) != 600:
-
-                st.warning(
-                    f"File labeling berisi {len(label_df)} data. "
-                    "Penelitian menggunakan 600 data manual."
-                )
-
-            # ================================================
-            # NORMALISASI TEKS UNTUK MATCHING
-            # ================================================
-
-            def normalisasi_matching(text):
-
-                text = str(text).lower().strip()
-
-                text = re.sub(
-                    r"\s+",
-                    " ",
-                    text
-                )
-
-                return text
-
-            dataset_match = (
-                df["h3YV2d"]
-                .fillna("")
-                .astype(str)
-                .apply(normalisasi_matching)
+            st.write(
+                "Upload file Excel yang berisi 600 data yang telah "
+                "diberi label manual."
             )
 
-            label_match = (
-                label_df[kolom_ulasan_label]
-                .fillna("")
-                .astype(str)
-                .apply(normalisasi_matching)
+            uploaded_label = st.file_uploader(
+                "Upload file labeling manual (.xlsx)",
+                type=["xlsx"],
+                key="label_manual"
             )
 
-            # ================================================
-            # MATCHING 600 DATA MANUAL
-            # ================================================
+            # --------------------------------------------------------
+            # UPLOAD MODEL
+            # --------------------------------------------------------
 
-            label_mapping = {}
+            st.subheader("2️⃣ Upload Model Naïve Bayes")
 
-            for i, teks in enumerate(label_match):
+            uploaded_model = st.file_uploader(
+                "Upload model Naïve Bayes (.pkl)",
+                type=["pkl"],
+                key="model_nb"
+            )
 
-                if teks not in label_mapping:
-                    label_mapping[teks] = []
+            # --------------------------------------------------------
+            # PROSES
+            # --------------------------------------------------------
 
-                label_mapping[teks].append(
-                    label_df.iloc[i][kolom_sentimen]
-                )
+            if uploaded_label is not None and uploaded_model is not None:
 
-            label_counter = {}
+                try:
 
-            for teks, labels in label_mapping.items():
+                    # ================================================
+                    # BACA DATA LABELING
+                    # ================================================
 
-                label_counter[teks] = 0
+                    label_df = pd.read_excel(
+                        uploaded_label
+                    )
 
-            label_manual_hasil = [None] * len(df)
+                    # Cari kolom ulasan
+                    kolom_ulasan_label = None
 
-            for i, teks in enumerate(dataset_match):
+                    for kolom in label_df.columns:
 
-                if teks in label_mapping:
+                        if str(kolom).strip().lower() in [
+                            "ulasan",
+                            "review",
+                            "reviews",
+                            "teks"
+                        ]:
+                            kolom_ulasan_label = kolom
+                            break
 
-                    posisi = label_counter[teks]
+                    if kolom_ulasan_label is None:
 
-                    if posisi < len(label_mapping[teks]):
+                        st.error(
+                            "Kolom ulasan pada file labeling tidak ditemukan."
+                        )
+                        st.stop()
 
-                        label_manual_hasil[i] = (
-                            label_mapping[teks][posisi]
+                    # Cari kolom sentimen
+                    kolom_sentimen = None
+
+                    for kolom in label_df.columns:
+
+                        if str(kolom).strip().lower() in [
+                            "sentimen",
+                            "sentiment",
+                            "label"
+                        ]:
+                            kolom_sentimen = kolom
+                            break
+
+                    if kolom_sentimen is None:
+
+                        st.error(
+                            "Kolom sentimen pada file labeling tidak ditemukan."
+                        )
+                        st.stop()
+
+                    # Pastikan jumlah data manual
+                    if len(label_df) != 600:
+
+                        st.warning(
+                            f"File labeling berisi {len(label_df)} data. "
+                            "Penelitian menggunakan 600 data manual."
                         )
 
-                        label_counter[teks] += 1
+                    # ================================================
+                    # NORMALISASI TEKS UNTUK MATCHING
+                    # ================================================
 
-            jumlah_manual = sum(
-                x is not None
-                for x in label_manual_hasil
-            )
+                    def normalisasi_matching(text):
 
-            st.info(
-                f"Data manual yang berhasil dicocokkan: "
-                f"**{jumlah_manual} data**"
-            )
+                        text = str(text).lower().strip()
 
-            if jumlah_manual != 600:
+                        text = re.sub(
+                            r"\s+",
+                            " ",
+                            text
+                        )
 
-                st.warning(
-                    "Jumlah data manual yang cocok belum 600. "
-                    "Periksa kembali file dataset dan file labeling."
-                )
+                        return text
 
-            # ================================================
-            # LOAD MODEL
-            # ================================================
-
-            model = pickle.load(
-                uploaded_model
-            )
-
-            # ================================================
-            # BUAT KOLOM SENTIMEN
-            # ================================================
-
-            df["sentimen"] = label_manual_hasil
-
-            # ================================================
-            # AMBIL DATA YANG BELUM DILABELI
-            # ================================================
-
-            indeks_belum_label = df[
-                "sentimen"
-            ].isna()
-
-            jumlah_belum_label = indeks_belum_label.sum()
-
-            st.info(
-                f"Data yang akan diprediksi oleh Naïve Bayes: "
-                f"**{jumlah_belum_label} data**"
-            )
-
-            # ================================================
-            # PREDIKSI 460 DATA
-            # ================================================
-
-            if jumlah_belum_label > 0:
-
-                teks_prediksi = (
-                    df.loc[
-                        indeks_belum_label,
-                        "h3YV2d"
-                    ]
-                    .fillna("")
-                    .astype(str)
-                )
-
-                # Jika preprocessing sudah dijalankan,
-                # gunakan teks bersih.
-                if "teks_bersih" in df.columns:
-
-                    teks_model = (
-                        df.loc[
-                            indeks_belum_label,
-                            "teks_bersih"
-                        ]
+                    dataset_match = (
+                        df["h3YV2d"]
                         .fillna("")
                         .astype(str)
+                        .apply(normalisasi_matching)
                     )
 
+                    label_match = (
+                        label_df[kolom_ulasan_label]
+                        .fillna("")
+                        .astype(str)
+                        .apply(normalisasi_matching)
+                    )
+
+                    # ================================================
+                    # MATCHING 600 DATA MANUAL
+                    # ================================================
+
+                    label_mapping = {}
+
+                    for i, teks in enumerate(label_match):
+
+                        if teks not in label_mapping:
+                            label_mapping[teks] = []
+
+                        label_mapping[teks].append(
+                            label_df.iloc[i][kolom_sentimen]
+                        )
+
+                    label_counter = {}
+
+                    for teks, labels in label_mapping.items():
+
+                        label_counter[teks] = 0
+
+                    label_manual_hasil = [None] * len(df)
+
+                    for i, teks in enumerate(dataset_match):
+
+                        if teks in label_mapping:
+
+                            posisi = label_counter[teks]
+
+                            if posisi < len(label_mapping[teks]):
+
+                                label_manual_hasil[i] = (
+                                    label_mapping[teks][posisi]
+                                )
+
+                                label_counter[teks] += 1
+
+                    jumlah_manual = sum(
+                        x is not None
+                        for x in label_manual_hasil
+                    )
+
+                    st.info(
+                        f"Data manual yang berhasil dicocokkan: "
+                        f"**{jumlah_manual} data**"
+                    )
+
+                    if jumlah_manual != 600:
+
+                        st.warning(
+                            "Jumlah data manual yang cocok belum 600. "
+                            "Periksa kembali file dataset dan file labeling."
+                        )
+
+                    # ================================================
+                    # LOAD MODEL
+                    # ================================================
+
+                    model = pickle.load(
+                        uploaded_model
+                    )
+
+                    # ================================================
+                    # BUAT KOLOM SENTIMEN
+                    # ================================================
+
+                    df["sentimen"] = label_manual_hasil
+
+                    # ================================================
+                    # AMBIL DATA YANG BELUM DILABELI
+                    # ================================================
+
+                    indeks_belum_label = df[
+                        "sentimen"
+                    ].isna()
+
+                    jumlah_belum_label = indeks_belum_label.sum()
+
+                    st.info(
+                        f"Data yang akan diprediksi oleh Naïve Bayes: "
+                        f"**{jumlah_belum_label} data**"
+                    )
+
+                    # ================================================
+                    # PREDIKSI 460 DATA
+                    # ================================================
+
+                    if jumlah_belum_label > 0:
+
+                        teks_prediksi = (
+                            df.loc[
+                                indeks_belum_label,
+                                "h3YV2d"
+                            ]
+                            .fillna("")
+                            .astype(str)
+                        )
+
+                        # Jika preprocessing sudah dijalankan,
+                        # gunakan teks bersih.
+                        if "teks_bersih" in df.columns:
+
+                            teks_model = (
+                                df.loc[
+                                    indeks_belum_label,
+                                    "teks_bersih"
+                                ]
+                                .fillna("")
+                                .astype(str)
+                            )
+
+                        else:
+
+                            teks_model = (
+                                teks_prediksi
+                                .apply(preprocess_text)
+                            )
+
+                        prediksi = model.predict(
+                            teks_model
+                        )
+
+                        prediksi = (
+                            pd.Series(prediksi)
+                            .astype(str)
+                            .str.strip()
+                            .str.lower()
+                            .str.capitalize()
+                            .values
+                        )
+
+                        df.loc[
+                            indeks_belum_label,
+                            "sentimen"
+                        ] = prediksi
+
+                    # ================================================
+                    # SIMPAN HASIL
+                    # ================================================
+
+                    df["sentimen"] = (
+                        df["sentimen"]
+                        .astype(str)
+                        .str.strip()
+                        .str.capitalize()
+                    )
+
+                    st.session_state.hasil = df
+
+                    st.success(
+                        "✅ Analisis sentimen berhasil dilakukan!"
+                    )
+
+                    # ================================================
+                    # RINGKASAN
+                    # ================================================
+
+                    st.subheader("📊 Ringkasan Sentimen")
+
+                    positif = (
+                        df["sentimen"] == "Positif"
+                    ).sum()
+
+                    netral = (
+                        df["sentimen"] == "Netral"
+                    ).sum()
+
+                    negatif = (
+                        df["sentimen"] == "Negatif"
+                    ).sum()
+
+                    col1, col2, col3 = st.columns(3)
+
+                    with col1:
+                        st.metric(
+                            "Positif",
+                            positif
+                        )
+
+                    with col2:
+                        st.metric(
+                            "Netral",
+                            netral
+                        )
+
+                    with col3:
+                        st.metric(
+                            "Negatif",
+                            negatif
+                        )
+
+                    # ================================================
+                    # HASIL PREDIKSI
+                    # ================================================
+
+                    st.subheader("📋 Hasil Analisis")
+
+                    st.dataframe(
+                        df[
+                            ["h3YV2d", "sentimen"]
+                        ],
+                        use_container_width=True
+                    )
+
+                    # ================================================
+                    # DOWNLOAD
+                    # ================================================
+
+                    csv = df.to_csv(
+                        index=False
+                    ).encode("utf-8")
+
+                    st.download_button(
+                        label="📥 Download Hasil Analisis",
+                        data=csv,
+                        file_name="HASIL_ANALISIS_SENTIMEN_BLIBLI.csv",
+                        mime="text/csv"
+                    )
+
+                except Exception as e:
+
+                    st.error(
+                        f"Analisis gagal dilakukan: {e}"
+                    )
+
+
+        # ============================================================
+
+    # ========================================================
+    # UJI SENTIMEN KOMENTAR MANUAL
+    # HANYA TAMPIL DI MENU ANALISIS SENTIMEN
+    # ========================================================
+
+    st.divider()
+
+    st.subheader("📝 Uji Sentimen Komentar Manual")
+
+    st.write(
+        "Masukkan komentar atau ulasan pengguna untuk mengetahui "
+        "apakah termasuk sentimen positif, netral, atau negatif."
+    )
+
+    model_manual_file = st.file_uploader(
+        "Upload model Naïve Bayes untuk uji komentar",
+        type=["pkl"],
+        key="model_manual_interface"
+    )
+
+    komentar_manual = st.text_area(
+        "Masukkan komentar:",
+        placeholder="Contoh: Aplikasinya bagus sekali dan mudah digunakan.",
+        height=120,
+        key="komentar_manual_interface"
+    )
+
+    if st.button("🔍 Analisis Komentar", key="tombol_analisis_manual_interface"):
+
+        if komentar_manual.strip() == "":
+            st.warning("Silakan masukkan komentar terlebih dahulu.")
+
+        elif model_manual_file is None:
+            st.warning("Silakan upload model Naïve Bayes terlebih dahulu.")
+
+        else:
+
+            try:
+
+                model_manual = pickle.load(model_manual_file)
+
+                # Preprocessing komentar manual
+                teks_bersih_manual = preprocess_text(komentar_manual)
+
+                # Prediksi menggunakan model Naïve Bayes
+                hasil_prediksi = model_manual.predict([teks_bersih_manual])[0]
+                hasil_prediksi = (
+                    str(hasil_prediksi).strip().lower().capitalize()
+                )
+
+                st.success("✅ Analisis komentar berhasil dilakukan.")
+
+                st.write("### 📊 Hasil Analisis Sentimen")
+
+                if hasil_prediksi == "Positif":
+                    st.success(f"😊 **Sentimen: {hasil_prediksi.upper()}**")
+                elif hasil_prediksi == "Negatif":
+                    st.error(f"😞 **Sentimen: {hasil_prediksi.upper()}**")
                 else:
+                    st.warning(f"😐 **Sentimen: {hasil_prediksi.upper()}**")
 
-                    teks_model = (
-                        teks_prediksi
-                        .apply(preprocess_text)
-                    )
+                # Tampilkan probabilitas jika tersedia
+                if hasattr(model_manual, "predict_proba"):
 
-                prediksi = model.predict(
-                    teks_model
-                )
+                    probabilitas = model_manual.predict_proba([teks_bersih_manual])[0]
+                    kelas = model_manual.classes_
 
-                prediksi = (
-                    pd.Series(prediksi)
-                    .astype(str)
-                    .str.strip()
-                    .str.lower()
-                    .str.capitalize()
-                    .values
-                )
+                    st.write("### 📈 Probabilitas Sentimen")
 
-                df.loc[
-                    indeks_belum_label,
-                    "sentimen"
-                ] = prediksi
+                    col1, col2, col3 = st.columns(3)
 
-            # ================================================
-            # SIMPAN HASIL
-            # ================================================
+                    for nama_kelas, nilai in zip(kelas, probabilitas):
 
-            df["sentimen"] = (
-                df["sentimen"]
-                .astype(str)
-                .str.strip()
-                .str.capitalize()
-            )
+                        nama_kelas = str(nama_kelas).strip().lower().capitalize()
 
-            st.session_state.hasil = df
+                        if nama_kelas == "Positif":
+                            with col1:
+                                st.metric("Positif", f"{nilai * 100:.2f}%")
+                        elif nama_kelas == "Netral":
+                            with col2:
+                                st.metric("Netral", f"{nilai * 100:.2f}%")
+                        elif nama_kelas == "Negatif":
+                            with col3:
+                                st.metric("Negatif", f"{nilai * 100:.2f}%")
 
-            st.success(
-                "✅ Analisis sentimen berhasil dilakukan!"
-            )
+                with st.expander("🔎 Lihat hasil preprocessing"):
+                    st.write(teks_bersih_manual)
 
-            # ================================================
-            # RINGKASAN
-            # ================================================
+            except Exception as e:
+                st.error(f"Analisis komentar gagal dilakukan: {e}")
 
-            st.subheader("📊 Ringkasan Sentimen")
-
-            positif = (
-                df["sentimen"] == "Positif"
-            ).sum()
-
-            netral = (
-                df["sentimen"] == "Netral"
-            ).sum()
-
-            negatif = (
-                df["sentimen"] == "Negatif"
-            ).sum()
-
-            col1, col2, col3 = st.columns(3)
-
-            with col1:
-                st.metric(
-                    "Positif",
-                    positif
-                )
-
-            with col2:
-                st.metric(
-                    "Netral",
-                    netral
-                )
-
-            with col3:
-                st.metric(
-                    "Negatif",
-                    negatif
-                )
-
-            # ================================================
-            # HASIL PREDIKSI
-            # ================================================
-
-            st.subheader("📋 Hasil Analisis")
-
-            st.dataframe(
-                df[
-                    ["h3YV2d", "sentimen"]
-                ],
-                use_container_width=True
-            )
-
-            # ================================================
-            # DOWNLOAD
-            # ================================================
-
-            csv = df.to_csv(
-                index=False
-            ).encode("utf-8")
-
-            st.download_button(
-                label="📥 Download Hasil Analisis",
-                data=csv,
-                file_name="HASIL_ANALISIS_SENTIMEN_BLIBLI.csv",
-                mime="text/csv"
-            )
-
-        except Exception as e:
-
-            st.error(
-                f"Analisis gagal dilakukan: {e}"
-            )
-
-
-# ============================================================
 # VISUALISASI
 # ============================================================
 
@@ -787,82 +882,6 @@ elif menu == "Visualisasi":
                 mime="text/csv"
             )
 
-
-# ============================================================
-# UJI KOMENTAR MANUAL
-# ============================================================
-
-st.divider()
-
-st.subheader("📝 Uji Sentimen Komentar Manual")
-
-st.write(
-    "Masukkan komentar atau ulasan pengguna untuk "
-    "mengetahui hasil prediksi sentimen menggunakan "
-    "model Naïve Bayes."
-)
-
-komentar_manual = st.text_area(
-    "Masukkan komentar:",
-    placeholder="Contoh: Aplikasi Blibli sangat bagus dan mudah digunakan.",
-    height=120
-)
-
-if st.button("🔍 Analisis Komentar", key="analisis_manual"):
-
-    if komentar_manual.strip() == "":
-        st.warning("Silakan masukkan komentar terlebih dahulu.")
-
-    else:
-
-        try:
-
-            # Preprocessing komentar
-            teks_bersih_manual = preprocess_text(
-                komentar_manual
-            )
-
-            # Menggunakan model yang sudah di-load
-            hasil_prediksi = model.predict(
-                [teks_bersih_manual]
-            )[0]
-
-            hasil_prediksi = (
-                str(hasil_prediksi)
-                .strip()
-                .lower()
-                .capitalize()
-            )
-
-            st.write("### Hasil Prediksi")
-
-            if hasil_prediksi == "Positif":
-
-                st.success(
-                    f"😊 Sentimen: **{hasil_prediksi}**"
-                )
-
-            elif hasil_prediksi == "Negatif":
-
-                st.error(
-                    f"😞 Sentimen: **{hasil_prediksi}**"
-                )
-
-            else:
-
-                st.warning(
-                    f"😐 Sentimen: **{hasil_prediksi}**"
-                )
-
-            with st.expander("🔎 Lihat teks setelah preprocessing"):
-
-                st.write(teks_bersih_manual)
-
-        except Exception as e:
-
-            st.error(
-                f"Analisis komentar gagal dilakukan: {e}"
-            )
 
 # ============================================================
 # FOOTER
