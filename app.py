@@ -697,13 +697,13 @@ elif menu == "Analisis Sentimen":
     # ========================================================
 
     st.divider()
-
     st.subheader("📝 Uji Sentimen Komentar Manual")
+    st.write("Masukkan komentar atau ulasan pengguna untuk mengetahui apakah termasuk sentimen positif, netral, atau negatif.")
 
-    st.write(
-        "Masukkan komentar atau ulasan pengguna untuk mengetahui "
-        "apakah termasuk sentimen positif, netral, atau negatif."
-    )
+    # ========================================================
+    # 1. UJI MANUAL MENGGUNAKAN MODEL NAÏVE BAYES
+    # ========================================================
+    st.markdown("### 1️⃣ Uji Komentar dengan Naïve Bayes")
 
     model_manual_file = st.file_uploader(
         "Upload model Naïve Bayes untuk uji komentar",
@@ -718,45 +718,88 @@ elif menu == "Analisis Sentimen":
         key="komentar_manual_interface"
     )
 
-    if st.button("🔍 Analisis Komentar", key="tombol_analisis_manual_interface"):
-
+    if st.button("🔍 Analisis dengan Naïve Bayes", key="tombol_analisis_manual_interface"):
         if komentar_manual.strip() == "":
             st.warning("Silakan masukkan komentar terlebih dahulu.")
-
         elif model_manual_file is None:
             st.warning("Silakan upload model Naïve Bayes terlebih dahulu.")
-
         else:
-
             try:
-
                 model_manual = pickle.load(model_manual_file)
-
-                # Preprocessing komentar manual
                 teks_bersih_manual = preprocess_text(komentar_manual)
-
-                # Prediksi menggunakan model Naïve Bayes
                 hasil_prediksi = model_manual.predict([teks_bersih_manual])[0]
-                hasil_prediksi = (
-                    str(hasil_prediksi).strip().lower().capitalize()
-                )
+                hasil_prediksi = str(hasil_prediksi).strip().lower().capitalize()
 
                 st.success("✅ Analisis komentar berhasil dilakukan.")
-
                 st.write("### 📊 Hasil Analisis Sentimen")
-
                 if hasil_prediksi == "Positif":
-                    st.success(f"😊 **Sentimen: {hasil_prediksi.upper()}**")
+                    st.success("😊 **Sentimen: POSITIF**")
                 elif hasil_prediksi == "Negatif":
-                    st.error(f"😞 **Sentimen: {hasil_prediksi.upper()}**")
+                    st.error("😞 **Sentimen: NEGATIF**")
                 else:
-                    st.warning(f"😐 **Sentimen: {hasil_prediksi.upper()}**")
+                    st.warning("😐 **Sentimen: NETRAL**")
 
                 with st.expander("🔎 Lihat hasil preprocessing"):
                     st.write(teks_bersih_manual)
-
             except Exception as e:
                 st.error(f"Analisis komentar gagal dilakukan: {e}")
+
+    # ========================================================
+    # 2. UJI MANUAL TANPA MODEL (RULE-BASED)
+    # ========================================================
+    st.divider()
+    st.markdown("### 2️⃣ Uji Komentar Tanpa Model")
+    st.write("Fitur ini menggunakan aturan kata/indikator sederhana untuk mengelompokkan komentar menjadi positif, netral, atau negatif.")
+
+    komentar_rule = st.text_area(
+        "Masukkan komentar:",
+        placeholder="Contoh: Pengiriman cepat dan pelayanannya sangat bagus.",
+        height=120,
+        key="komentar_rule_interface"
+    )
+
+    if st.button("🔍 Analisis Tanpa Model", key="tombol_analisis_rule_interface"):
+        if komentar_rule.strip() == "":
+            st.warning("Silakan masukkan komentar terlebih dahulu.")
+        else:
+            try:
+                teks_rule = komentar_rule.lower()
+
+                kata_positif = {
+                    "bagus", "baik", "mantap", "keren", "terbaik", "suka",
+                    "puas", "mudah", "cepat", "aman", "nyaman", "recommended",
+                    "rekomendasi", "hebat", "luar biasa", "excellent", "good",
+                    "love", "murah", "diskon", "promo", "membantu", "memuaskan"
+                }
+
+                kata_negatif = {
+                    "jelek", "buruk", "error", "lambat", "lemot", "kecewa",
+                    "mengecewakan", "susah", "sulit", "gagal", "rusak", "telat",
+                    "terlambat", "parah", "gangguan", "annoying", "mengganggu",
+                    "tidak bisa", "gak bisa", "gak mau", "nggak bisa", "penipuan",
+                    "rugi", "mahal", "complain", "bad", "worst"
+                }
+
+                jumlah_positif = sum(1 for kata in kata_positif if kata in teks_rule)
+                jumlah_negatif = sum(1 for kata in kata_negatif if kata in teks_rule)
+
+                if jumlah_positif > jumlah_negatif:
+                    hasil_rule = "Positif"
+                elif jumlah_negatif > jumlah_positif:
+                    hasil_rule = "Negatif"
+                else:
+                    hasil_rule = "Netral"
+
+                st.success("✅ Analisis tanpa model berhasil dilakukan.")
+                st.write("### 📊 Hasil Analisis Sentimen")
+                if hasil_rule == "Positif":
+                    st.success("😊 **Sentimen: POSITIF**")
+                elif hasil_rule == "Negatif":
+                    st.error("😞 **Sentimen: NEGATIF**")
+                else:
+                    st.warning("😐 **Sentimen: NETRAL**")
+            except Exception as e:
+                st.error(f"Analisis tanpa model gagal dilakukan: {e}")
 
 # VISUALISASI
 # ============================================================
